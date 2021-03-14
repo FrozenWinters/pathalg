@@ -9,6 +9,10 @@ open import Agda.Primitive using (Level; lzero; lsuc; _⊔_) public
 UU : ∀ (i) → Set (lsuc i)
 UU i = Set i
 
+record Lift {i j} (A : UU i) : UU (i ⊔ j) where
+  constructor lift
+  field lower : A
+
 -- Function types
 
 id : ∀ {i} {A : UU i} → A → A
@@ -49,6 +53,23 @@ data ℕ : Set where
 
 {-# BUILTIN NATURAL ℕ #-}
 
+-- Unit type
+
+record ⊤ : Set where
+  instance constructor unit
+
+{-# BUILTIN UNIT ⊤ #-}
+
 -- Empty type
 
 data ⊥ : Set where
+
+-- Booleans
+
+data Bool : Set where
+  true : Bool
+  false : Bool
+
+{-# BUILTIN BOOL Bool #-}
+{-# BUILTIN FALSE false #-}
+{-# BUILTIN TRUE true #-}

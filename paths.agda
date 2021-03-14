@@ -35,8 +35,12 @@ rinv : ∀ {i} {A : UU i} {x y : A} (a : Id x y) →
 rinv (refl x) = refl (refl x)
 
 invinv : ∀ {i} {A : UU i} {x y : A} (a : Id x y) →
-  (Id (inv (inv a)) a)
+  Id (inv (inv a)) a
 invinv (refl x) = refl (refl x)
+
+inv-con : ∀ {i} {A : UU i} {x y z : A} (a : Id x y) (b : Id y z) →
+  Id (inv (a · b)) ((inv b) · (inv a))
+inv-con (refl x) (refl x) = refl (refl x)
 
 assoc : ∀ {i} {A : UU i} {x y z w : A} {a : Id x y} {b : Id y z} {c : Id z w} →
   Id  (a · b · c) (a · (b · c))
