@@ -9,22 +9,23 @@ _⋈_ : {x y z : A} → PathAlg x y → PathAlg y z → PathAlg x z
 s ⋈ □ = s
 s ⋈ t ▷ a = (s ⋈ t) ▷ a
 
--- This key lemma the performs rebracketing
-↯-⋈ : {x y z : A} (s : PathAlg x y) (t : PathAlg y z) →
-  IdAlg (s ⋈ t) (□ ▷ ⟨| s |⟩ ▷ ⟨| t |⟩)
-↯-⋈ s □ = mk-id (inv (rrefl (↯ s)))
-↯-⋈ s (t@(_ ▷ _) ▷ a) = mk-id (id↯ (↯-⋈ s t ▷R a) · assoc)
-↯-⋈ □ (□ ▷ a) = mk-id (inv (lrefl (↯-seg a)))
-↯-⋈ s@(_ ▷ _) (□ ▷ b) = mk-id (refl (↯ s · ↯-seg b))
-
-infixr 29 _◁_
-_◁_ : {x y z : A} → PathSeg x y → PathAlg y z → PathAlg x z
-a ◁ s = □ ▷ a ⋈ s
-
 ⋈-lunit : {x y : A} (s : PathAlg x y) →
   Id (□ ⋈ s) s
 ⋈-lunit □ = refl □
 ⋈-lunit (s ▷ a) = ap (_▷ a) (⋈-lunit s)
+
+-- This key lemma the performs rebracketing
+↯-⋈ : {x y z : A} (s : PathAlg x y) (t : PathAlg y z) →
+  IdAlg (s ⋈ t) (□ ▷ ⟨| s |⟩ ▷ ⟨| t |⟩)
+↯-⋈ □ t = ⋈-lunit t *L mk-id (inv (lrefl (↯ t)))
+↯-⋈ s@(_ ▷ _) □ = mk-id (inv (rrefl (↯ s)))
+↯-⋈ s@(_ ▷ _) (□ ▷ b) = mk-id (refl (↯ (s ▷ b)))
+↯-⋈ s@(_ ▷ _)  (□ ▷ a ▷ b) = mk-id assoc
+↯-⋈ s@(_ ▷ _)  (t@(_ ▷ _ ▷ _) ▷ a) = mk-id ((id↯ (↯-⋈ s t) ·R (↯-seg a)) · assoc)
+
+infixr 29 _◁_
+_◁_ : {x y z : A} → PathSeg x y → PathAlg y z → PathAlg x z
+a ◁ s = □ ▷ a ⋈ s
 
 ⋈-assoc : {w x y z : A} (r : PathAlg w x) (s : PathAlg x y) (t : PathAlg y z) →
   Id (r ⋈ s ⋈ t) (r ⋈ (s ⋈ t))
@@ -40,11 +41,9 @@ _◁R_ : {x y z : A} (a : PathSeg x y) {r s : PathAlg y z} (p : IdAlg r s) → I
 _◁R_ a {r = r} {s = s} p = ↯-⋈ (□ ▷ a) r ·alg mk-id (↯-seg a ·L id↯ p) ·alg inv-alg (↯-⋈ (□ ▷ a) s)
 
 _⋈L_ : {x y z : A} (s : PathAlg x y) {t r : PathAlg y z} (p : IdAlg t r) → IdAlg (s ⋈ t) (s ⋈ r)
-_⋈L_ □ {t = t} {r = r} p = id-to-alg (⋈-lunit t) ·alg p ·alg inv-alg (id-to-alg (⋈-lunit r))
+_⋈L_ □ {t = t} {r = r} p = ⋈-lunit t *L p *R inv (⋈-lunit r)
 _⋈L_ (s ▷ a) {t = t} {r = r} p =
-  id-to-alg(⋈-assoc s (□ ▷ a) t)
-  ·alg ↯-⋈ s (a ◁ t) ·alg mk-id (↯ s ·L (id↯ (a ◁R p))) ·alg inv-alg (↯-⋈ s (a ◁ r))
-  ·alg id-to-alg (inv(⋈-assoc s (□ ▷ a) r))
+  ⋈-assoc s (□ ▷ a) t *L ↯-⋈ s (a ◁ t) ·alg mk-id (↯ s ·L (id↯ (a ◁R p))) ·alg inv-alg (↯-⋈ s (a ◁ r)) *R  inv (⋈-assoc s (□ ▷ a) r)
 
 
 private
@@ -123,9 +122,9 @@ goZoom s n m =
     (take n s) (take m (drop n s)) (drop m (drop n s))
     (inv (take-drop-unsplit n s) · ap (take n s ⋈_) (inv (take-drop-unsplit m (drop n s))))
 
-replaceZoom : {x y : A} (s : PathAlg x y) (info : ZoomInfo s) {t : PathAlg (z-x info) (z-y info)} →
+replaceZoom : {x y : A} {s : PathAlg x y} (info : ZoomInfo s) {t : PathAlg (z-x info) (z-y info)} →
   IdAlg (z-middle info) t → IdAlg s (z-init info ⋈ (t ⋈ z-final info))
-replaceZoom s (mk-ZoomInfo init middle final p) {t = t} q = id-to-alg p ·alg (init ⋈L (q ⋈R final))
+replaceZoom (mk-ZoomInfo init middle final p) {t = t} q = p *L (init ⋈L (q ⋈R final))
 
 lrefl-id : {x y : A} (a : Id x y) → IdAlg (□ ▷ △ a) (□ ▷ △ (refl x) ▷ △ a)
 lrefl-id a = mk-id (inv (lrefl a))
@@ -134,4 +133,4 @@ make5 : {x : A} (a : Id x x) → PathAlg x x
 make5 a = □ ▷ △ a  ▷ △ a  ▷ △ a  ▷ △ a  ▷ △ a
 
 lem : {x : A} (a : Id x x) → UU i
-lem a = {!replaceZoom (make5 a) (goZoom (make5 a) 2 1) (lrefl-id a)!}
+lem a = {!replaceZoom (goZoom (make5 a) 2 1) (lrefl-id a)!}

@@ -37,6 +37,16 @@ record IdAlg {i} {A : UU i} {x y : A} (s t : PathAlg x y) : UU i where
 
 id↯ = IdAlg.id↯
 
+infixl 20 _*L_
+_*L_ : ∀ {i} {A : UU i} {x y : A} {s t r : PathAlg x y} →
+  Id s t → IdAlg t r → IdAlg s r
+_*L_ {r = r} a p = tr (λ u → IdAlg u r) (inv a) p
+
+infixl 20 _*R_
+_*R_ :  ∀ {i} {A : UU i} {x y : A} {s t r : PathAlg x y} →
+  IdAlg s t → Id t r → IdAlg s r
+_*R_ {s = s} p a = tr (λ u → IdAlg s u) a p
+
 refl-alg : ∀ {i} {A : UU i} {x y : A} (s : PathAlg x y) → IdAlg s s
 refl-alg s = mk-id (refl (↯ s))
 
@@ -54,14 +64,16 @@ inv-alg p = mk-id (inv (id↯ p))
 ↯-▷ □ a = mk-id (inv (lrefl (↯-seg a)))
 ↯-▷ s@(_ ▷ _) a = mk-id (refl _)
 
-_▷R_  : ∀ {i} {A : UU i} {x y z : A} {s t : PathAlg x y} →
+_▷R_ : ∀ {i} {A : UU i} {x y z : A} {s t : PathAlg x y} →
   IdAlg s t → (a : PathSeg y z) → IdAlg (s ▷ a) (t ▷ a)
-_▷R_ {s = s} {t = t} p a = ↯-▷ s a ·alg mk-id (id↯ p ·R (↯-seg a)) ·alg inv-alg (↯-▷ t a)
+_▷R_ {s = □} {t = t} p a = ↯-▷ □ a ·alg mk-id (id↯ p ·R (↯-seg a)) ·alg inv-alg (↯-▷ t a)
+_▷R_ {s = s@(_ ▷ _)} {t = □} p a = mk-id (id↯ p ·R (↯-seg a)) ·alg  inv-alg (↯-▷ □ a)
+_▷R_ {s = s@(_ ▷ _)} {t = t@(_ ▷ _)} p a = mk-id (id↯ p ·R _)
+
+--↯-▷ s a ·alg mk-id (id↯ p ·R (↯-seg a)) ·alg inv-alg (↯-▷ t a)
 
 _▷L_ : ∀ {i} {A : UU i} {x y z : A} (s : PathAlg x y) {a b : PathSeg y z} →
   IdAlg (□ ▷ a) (□ ▷ b) → IdAlg (s ▷ a) (s ▷ b)
 _▷L_ s {a = a} {b = b} p = ↯-▷ s a ·alg mk-id (↯ s ·L id↯ p) ·alg inv-alg (↯-▷ s b)
 
-id-to-alg : ∀ {i} {A : UU i} {x y : A} {s t : PathAlg x y} (p : Id s t) → IdAlg s t
-id-to-alg {x = x} {y = y} {s = s} p = tr (λ (r : PathAlg x y)  → IdAlg s r) p (refl-alg s)
 
