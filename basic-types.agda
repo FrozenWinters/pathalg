@@ -47,29 +47,8 @@ A × B = Σ A (λ (_ : A) → B)
 
 -- Natural Numbers
 
-data ℕ : Set where
-  Z : ℕ
-  S : ℕ → ℕ
-
-{-# BUILTIN NATURAL ℕ #-}
+open import Data.Nat as ℕ using (ℕ) renaming (zero to Z; suc to S) public
 
 -- Unit type
 
-record ⊤ : Set where
-  instance constructor unit
-
-{-# BUILTIN UNIT ⊤ #-}
-
--- Empty type
-
-data ⊥ : Set where
-
--- Booleans
-
-data Bool : Set where
-  true : Bool
-  false : Bool
-
-{-# BUILTIN BOOL Bool #-}
-{-# BUILTIN FALSE false #-}
-{-# BUILTIN TRUE true #-}
+open import Data.Unit as ⊤ using (⊤) renaming (tt to unit) public
