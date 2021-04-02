@@ -17,7 +17,7 @@ s ⋈ t ▷ a = (s ⋈ t) ▷ a
 -- This key lemma the performs rebracketing
 ↯-⋈ : {x y z : A} (s : PathAlg x y) (t : PathAlg y z) →
   IdAlg (s ⋈ t) (□ ▷ ⟨| s |⟩ ▷ ⟨| t |⟩)
-↯-⋈ □ t = ⋈-lunit t *L mk-id (inv (lrefl (↯ t)))
+↯-⋈ □ t = ⋈-lunit t *algL mk-id (inv (lrefl (↯ t)))
 ↯-⋈ s@(_ ▷ _) □ = mk-id (inv (rrefl (↯ s)))
 ↯-⋈ s@(_ ▷ _) (□ ▷ b) = mk-id (refl (↯ (s ▷ b)))
 ↯-⋈ s@(_ ▷ _)  (□ ▷ a ▷ b) = mk-id assoc
@@ -41,9 +41,9 @@ _◁R_ : {x y z : A} (a : PathSeg x y) {r s : PathAlg y z} (p : IdAlg r s) → I
 _◁R_ a {r = r} {s = s} p = ↯-⋈ (□ ▷ a) r ·alg mk-id (↯-seg a ·L id↯ p) ·alg inv-alg (↯-⋈ (□ ▷ a) s)
 
 _⋈L_ : {x y z : A} (s : PathAlg x y) {t r : PathAlg y z} (p : IdAlg t r) → IdAlg (s ⋈ t) (s ⋈ r)
-_⋈L_ □ {t = t} {r = r} p = ⋈-lunit t *L p *R inv (⋈-lunit r)
+_⋈L_ □ {t = t} {r = r} p = ⋈-lunit t *algL p *algR inv (⋈-lunit r)
 _⋈L_ (s ▷ a) {t = t} {r = r} p =
-  ⋈-assoc s (□ ▷ a) t *L ↯-⋈ s (a ◁ t) ·alg mk-id (↯ s ·L (id↯ (a ◁R p))) ·alg inv-alg (↯-⋈ s (a ◁ r)) *R  inv (⋈-assoc s (□ ▷ a) r)
+  ⋈-assoc s (□ ▷ a) t *algL ↯-⋈ s (a ◁ t) ·alg mk-id (↯ s ·L (id↯ (a ◁R p))) ·alg inv-alg (↯-⋈ s (a ◁ r)) *algR  inv (⋈-assoc s (□ ▷ a) r)
 
 
 private
@@ -124,7 +124,7 @@ goZoom s n m =
 
 replaceZoom : {x y : A} {s : PathAlg x y} (info : ZoomInfo s) {t : PathAlg (z-x info) (z-y info)} →
   IdAlg (z-middle info) t → IdAlg s (z-init info ⋈ (t ⋈ z-final info))
-replaceZoom (mk-ZoomInfo init middle final p) {t = t} q = p *L (init ⋈L (q ⋈R final))
+replaceZoom (mk-ZoomInfo init middle final p) {t = t} q = p *algL (init ⋈L (q ⋈R final))
 
 lrefl-id : {x y : A} (a : Id x y) → IdAlg (□ ▷ △ a) (□ ▷ △ (refl x) ▷ △ a)
 lrefl-id a = mk-id (inv (lrefl a))

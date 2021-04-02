@@ -37,15 +37,47 @@ record IdAlg {i} {A : UU i} {x y : A} (s t : PathAlg x y) : UU i where
 
 id↯ = IdAlg.id↯
 
-infixl 20 _*L_
-_*L_ : ∀ {i} {A : UU i} {x y : A} {s t r : PathAlg x y} →
-  Id s t → IdAlg t r → IdAlg s r
-_*L_ {r = r} a p = tr (λ u → IdAlg u r) (inv a) p
+record IdSeg {i} {A : UU i} {x y : A} (a b : PathSeg x y) : UU i where
+  constructor mk-seg-id
+  field
+    id-seg↯ : Id (↯-seg a) (↯-seg b)
 
-infixl 20 _*R_
-_*R_ :  ∀ {i} {A : UU i} {x y : A} {s t r : PathAlg x y} →
+id-seg↯ = IdSeg.id-seg↯
+
+infixl 20 _*algL_  _*algR_ _*segL_  _*segR_  _*SegL_  _*SegR_ _*seg'L_  _*seg'R_
+
+_*algL_ :  ∀ {i} {A : UU i} {x y : A} {s t r : PathAlg x y} →
+  Id s t → IdAlg t r → IdAlg s r
+a *algL p = _*L_ {P = IdAlg} a p
+
+_*algR_ :  ∀ {i} {A : UU i} {x y : A} {s t r : PathAlg x y} →
   IdAlg s t → Id t r → IdAlg s r
-_*R_ {s = s} p a = tr (λ u → IdAlg s u) a p
+p *algR a = _*R_ {P = IdAlg} p a
+
+_*segL_ :  ∀ {i} {A : UU i} {x y : A} {a b c : PathSeg x y} →
+  Id a b → IdSeg b c → IdSeg a c
+p *segL q = _*L_ {P = IdSeg} p q
+
+_*segR_ :  ∀ {i} {A : UU i} {x y : A} {a b c : PathSeg x y} →
+  IdSeg a b → Id b c → IdSeg a c
+p *segR q = _*R_ {P = IdSeg} p q
+
+_*SegL_ :  ∀ {i} {A : UU i} {x y z : A} →
+  Id x y → PathSeg y z → PathSeg x z
+a *SegL b = _*L_ {P = PathSeg} a b
+
+_*SegR_ :  ∀ {i} {A : UU i} {x y z : A} →
+  PathSeg x y → Id y z → PathSeg x z
+a *SegR b = _*R_ {P = PathSeg} a b
+
+_*seg'R_ :  ∀ {i} {A : UU i} {x y z : A} {a b : PathSeg x y} →
+  IdSeg a b → (c : Id y z) → IdSeg (a *SegR c) (b *SegR c)
+p *seg'R refl _ = p
+
+_*seg'L_ :  ∀ {i} {A : UU i} {x y z : A} {a b : PathSeg y z} →
+  (c : Id x y) → IdSeg a b → IdSeg (c *SegL a) (c *SegL b)
+refl _ *seg'L p = p
+
 
 refl-alg : ∀ {i} {A : UU i} {x y : A} (s : PathAlg x y) → IdAlg s s
 refl-alg s = mk-id (refl (↯ s))

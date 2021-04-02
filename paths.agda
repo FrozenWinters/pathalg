@@ -125,9 +125,34 @@ tr-back :  ∀ {i j k} {B : UU j} (P : B → UU k) {A : UU i} (f : A → B) {x y
   Id (tr (P ∘ f) a u) (tr P (ap f a) u)
 tr-back P f (refl x) u = refl u
 
-tr-fiberwise :  ∀ {i j k} {A : UU i} {P : A → UU j} {Q : A → UU k} (f : (x : A) → (P x) → (Q x)) {x y : A} (a : Id x y) (u : P x) →
+tr-fibrewise :  ∀ {i j k} {A : UU i} {P : A → UU j} {Q : A → UU k} (f : (x : A) → (P x) → (Q x)) {x y : A} (a : Id x y) (u : P x) →
   Id (tr Q a (f x u)) (f y (tr P a u))
-tr-fiberwise f (refl x) u = refl (f x u)
+tr-fibrewise f (refl x) u = refl (f x u)
+
+tr-fibrewise' :  ∀ {i j k} {A : UU i} {P : A → UU j} {Q : A → UU k} (f : {x : A} → (P x) → (Q x)) {x y : A} (a : Id x y) (u : P x) →
+  Id (tr Q a (f u)) (f (tr P a u))
+tr-fibrewise' f (refl x) u = refl (f u)
+
+-- Concatenation via transport
+-- Best used when transporting over something known to be refl
+
+infixl 20 _*L_
+_*L_ : ∀ {i j} {A : UU i} {P : A → A → UU j} {x y z : A} →
+  Id x y → P y z → P x z
+_*L_ {P = P} {z = z} a p = tr (λ u → P u z) (inv a) p
+
+infixl 20 _*R_
+_*R_ : ∀ {i j} {A : UU i} {P : A → A → UU j} {x y z : A} →
+  P x y → Id y z → P x z
+_*R_ {P = P} {x = x} p a = tr (λ u → P x u) a p
+
+_*·_ : ∀ {i} {A : UU i} {x y z : A} →
+  Id x y → Id y z → Id x z
+_*·_ a b = _*L_ {P = Id} a b
+
+_·*_ : ∀ {i} {A : UU i} {x y z : A} →
+  Id x y → Id y z → Id x z
+_·*_ {x = x} a b = _*R_ {P = Id} a b
 
 -- Depenent action of paths
 
@@ -146,7 +171,7 @@ apd-comp : ∀ {i j k} {A : UU i} {B : UU j} {P : (x : B) → UU k} (g : (x : B)
 apd-comp g f (refl x) = refl (refl ((g ∘ f) x))
 
 apd-comp-d : ∀ {i j k} {A : UU i} {P : A → UU j} {Q : A → UU k} (g : (x : A) → (P x) → (Q x)) (f : (x : A) → (P x)) {x y : A} (a : Id x y)  →
-  Id (apd (g ∘d f) a) ((tr-fiberwise g a (f x)) · (ap (g y) (apd f a)))
+  Id (apd (g ∘d f) a) ((tr-fibrewise g a (f x)) · (ap (g y) (apd f a)))
 apd-comp-d g f (refl x) = refl (refl ((g ∘d f) x))
 
 tr-const : ∀ {i j} {A : UU i} (B : UU j) {x y : A} (a : Id x y) (u : B) →
