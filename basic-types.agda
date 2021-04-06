@@ -45,6 +45,12 @@ pr₂ = Σ.pr₂
 _×_ : ∀ {i j} (A : UU i) (B : UU j) → UU (i ⊔ j)
 A × B = Σ A (λ (_ : A) → B)
 
+-- Coproducts
+
+data _+_ {i j} (A : UU i) (B : UU j) : UU (i ⊔ j) where
+  inl : A → A + B
+  inr : B → A + B
+
 -- Natural Numbers
 
 open import Data.Nat as ℕ using (ℕ) renaming (zero to Z; suc to S) public
@@ -52,3 +58,22 @@ open import Data.Nat as ℕ using (ℕ) renaming (zero to Z; suc to S) public
 -- Unit type
 
 open import Data.Unit as ⊤ using (⊤) renaming (tt to unit) public
+
+
+-- Booleans
+
+Bool = ⊤ + ⊤
+
+true : Bool
+true = inl unit
+
+false : Bool
+false = inr unit
+
+-- Empty type
+
+open import Data.Empty public
+
+-- Maybe
+
+open import Data.Maybe as Maybe using (Maybe; just; nothing; maybe; to-witness; to-witness-T; Is-just; Is-nothing) public

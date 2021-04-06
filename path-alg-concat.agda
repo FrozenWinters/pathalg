@@ -47,6 +47,14 @@ _⋈L_ (s ▷ a) {t = t} {r = r} p =
 
 
 private
+  Is-nonempty : {x y : A} → PathAlg x y → (UU lzero)
+  Is-nonempty □ = ⊥
+  Is-nonempty (s ▷ a) = ⊤
+
+  nonempty? : {x y : A} → (s : PathAlg x y) → (Is-nonempty s) + ⊤
+  nonempty? □ = inr unit
+  nonempty? (s ▷ a) = inl unit
+
   split : {x y : A} → PathAlg x y → Σ A (λ z → (PathSeg x z) × (PathAlg z y))
   split {x = x} □ = (x , (△ refl x , □))
   split {y = y} (□ ▷ a) = (y , (a , □))
@@ -55,17 +63,15 @@ private
     in (z , (c , t ▷ a))
 
   unsplit-type : {x y : A} → PathAlg x y → UU (lsuc i)
-  unsplit-type {x = x} □ = Lift ⊤
-  unsplit-type s@(_ ▷ _) =
+  unsplit-type s =
     let  (_ , (b , t)) = split s
     in Id (□ ▷ b ⋈ t) s
 
-  unsplit : {x y : A} → (s : PathAlg x y) → unsplit-type s
-  unsplit □ = lift unit
-  unsplit (□  ▷ a) = refl (□ ▷ a)
-  unsplit (s@(_ ▷ _) ▷ a) =
+  unsplit : {x y : A} → (s : PathAlg x y) → Is-nonempty s → unsplit-type s
+  unsplit (□ ▷ a) _ = refl (□ ▷ a)
+  unsplit (s@(_ ▷ _) ▷ a) _ =
     let  (z , (c , t)) = split s
-    in  ap (_▷ a) (unsplit s)
+    in  ap (_▷ a) (unsplit s unit)
 
   point-from-start : (n : ℕ) {x y : A} → PathAlg x y → A
   point-from-start Z {x = x} s = x
@@ -98,7 +104,13 @@ private
     let (_ , (b , t)) = split s
     in ⋈-assoc (□ ▷ b) (take n t) (drop n t)
        · ap (b ◁_) (take-drop-unsplit n t)
-       · unsplit s
+       · (unsplit s unit)
+
+  first : {x y : A} (s : PathAlg x y) → Is-nonempty s → (PathSeg x (point-from-start 1 s))
+  first s@(_ ▷ _) _ = pr₁ (pr₂ (split s))
+
+  first-rest-unsplit : {x y : A} → (s : PathAlg x y) → (p : Is-nonempty s) → Id ((first s p) ◁ (drop 1 s)) s
+  first-rest-unsplit s@(_ ▷ _) p = unsplit s p
 
 record ZoomInfo {x y : A} (s : PathAlg x y) : UU (lsuc i) where
   constructor mk-ZoomInfo
@@ -116,6 +128,15 @@ private
   z-middle = ZoomInfo.middle
   z-final = ZoomInfo.final
 
+record SelectInfo {x y : A} (s : PathAlg x y) : UU (lsuc i) where
+  constructor mk-SelectInfo
+  field
+    {x' y'} : A
+    init : PathAlg x x'
+    middle : PathSeg x' y'
+    final : PathAlg y' y
+    p : Id s (init ⋈ (middle ◁ final))
+
 goZoom : {x y : A} (s : PathAlg x y) (n m : ℕ) → ZoomInfo s
 goZoom s n m =
   mk-ZoomInfo
@@ -132,5 +153,18 @@ lrefl-id a = mk-id (inv (lrefl a))
 make5 : {x : A} (a : Id x x) → PathAlg x x
 make5 a = □ ▷ △ a  ▷ △ a  ▷ △ a  ▷ △ a  ▷ △ a
 
-lem : {x : A} (a : Id x x) → UU i
-lem a = {!replaceZoom (goZoom (make5 a) 2 1) (lrefl-id a)!}
+zoom-test : {x : A} (a : Id x x) →
+  Id (a · a · a · a · a) (a · a · refl x · a · a · a)
+zoom-test a = id↯ (replaceZoom (goZoom (make5 a) 2 1) (lrefl-id a))
+
+goSelect-helper : {x y : A} (s : PathAlg x y) (n : ℕ) → Is-nonempty (drop n s) → SelectInfo s
+goSelect-helper s n p = mk-SelectInfo (take n s) (first (drop n s) p) ((drop 1 (drop n s)))
+                                      (inv (take-drop-unsplit n s) ·  ap (take n s ⋈_) (inv (first-rest-unsplit (drop n s) p)))
+
+goSelect : {x y : A} (s : PathAlg x y) (n : ℕ) → Maybe (SelectInfo s)
+goSelect s n with nonempty? (drop n s)
+... | inl p = just (goSelect-helper s n p)
+... | inr _ = nothing
+
+select-test : {x : A} (a : Id x x) → SelectInfo (make5 a)
+select-test a = to-witness-T (goSelect (make5 a) 2) _

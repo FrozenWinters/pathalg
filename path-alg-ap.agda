@@ -3,7 +3,6 @@
 module path-alg-ap where
 
 open import path-alg
-open import Data.Maybe as Maybe using (Maybe; just; nothing; maybe; to-witness-T)
 
 module _ {i} where
   infixr 30 _∘◁_
@@ -89,12 +88,6 @@ module _ {i} where
                    (ap (f ⊚_) pa · *SegR-lem f (inv px *SegL fs ▷⊚ b) py
                    · ap (_*SegR ap f py) (*SegL-lem f (inv px) (fs ▷⊚ b) · ap (_*SegL (f ⊚ (fs ▷⊚ b))) (ap-inv f px))))
 
-  under5 : {A : UU i} {x : A} (f : A → A) (a : Id x x) → PathSeg (f (f (f (f (f x))))) (f (f (f (f (f x)))))
-  under5 f a = f ⊚ f ⊚ f ⊚ f ⊚ f ⊚ △ a
-
-  under-test : {A : UU i} {x : A} (f : A → A) (a : Id x x) → UnderInfo (under5 f a)
-  under-test f a = to-witness-T (goUnder (under5 f a) 5) _
-
   replaceUnder : {A : UU i} {x y : A} {a : PathSeg x y} (info : UnderInfo a) {t : PathSeg (u-x info) (u-y info)} →
     IdSeg (u-a info) t → IdSeg a (inv (u-px info) *SegL ((u-fs info) ▷⊚ t) *SegR (u-py info))
   replaceUnder {a = b} (mk-UnderInfo fs a px py pa) p = pa *segL (inv px *seg'L (fs ▷⊚R p) *seg'R py)
@@ -103,8 +96,21 @@ module _ {i} where
     IdSeg a (inv (u-px info) *SegL ↯fun (u-fs info) ⊚ (u-a info) *SegR (u-py info))
   colapseOver (mk-UnderInfo fs a px py pa) = pa *segL (inv px *seg'L ↯-▷⊚ fs a *seg'R py)
 
+  -- Tests
+
+  under5 : {A : UU i} {x : A} (f : A → A) (a : Id x x) → PathSeg (f (f (f (f (f x))))) (f (f (f (f (f x)))))
+  under5 f a = f ⊚ f ⊚ f ⊚ f ⊚ f ⊚ △ a
+
+  under-test : {A : UU i} {x : A} (f : A → A) (a : Id x x) → UnderInfo (under5 f a)
+  under-test f a = to-witness-T (goUnder (under5 f a) 5) unit
+
   lrefl-id-seg : {A : UU i} {x y : A} (a : Id x y) → IdSeg (△ a) ⟨| □ ▷ △ (refl x) ▷ △ a |⟩
   lrefl-id-seg a = mk-seg-id (inv (lrefl a))
 
-  under-test2 : {A : UU i} {x : A} (f : A → A) (a : Id x x) → UU i
-  under-test2 f a  = {!colapseOver (under-test f a)!}
+  under-test2 : {A : UU i} {x : A} (f : A → A) (a : Id x x) →
+    Id (ap f (ap f (ap f (ap f (ap f a))))) (ap f (ap f (ap f (ap f (ap f (refl x · a))))))
+  under-test2 f a = id-seg↯ (replaceUnder (under-test f a) (lrefl-id-seg a))
+
+  under-test3 : {A : UU i} {x : A} (f : A → A) (a : Id x x) →
+    Id (ap f (ap f (ap f (ap f (ap f a))))) (ap (f ∘ f ∘ f ∘ f ∘ f) a)
+  under-test3 f a  = id-seg↯ (colapseOver (under-test f a))
