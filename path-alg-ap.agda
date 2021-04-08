@@ -109,7 +109,7 @@ module _ {i} where
 
   under-test2 : {A : UU i} {x : A} (f : A → A) (a : Id x x) →
     Id (ap f (ap f (ap f (ap f (ap f a))))) (ap f (ap f (ap f (ap f (ap f (refl x · a))))))
-  under-test2 f a = id-seg↯ (replaceUnder (under-test f a) (lrefl-id-seg a))
+  under-test2 f a = id-seg↯ ((replaceUnder (under-test f a) (lrefl-id-seg a)))
 
   under-test3 : {A : UU i} {x : A} (f : A → A) (a : Id x x) →
     Id (ap f (ap f (ap f (ap f (ap f a))))) (ap (f ∘ f ∘ f ∘ f ∘ f) a)
