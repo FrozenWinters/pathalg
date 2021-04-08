@@ -34,7 +34,7 @@ path-type : ∀ {i} (pt : PathType) → param-type {i} pt → UU (lsuc i)
 path-type ptAlg (mk-path-spec x y) = PathAlg x y
 path-type ptSeg (mk-path-spec x y) = PathSeg x y
 path-type ptFunSeq (mk-fun-spec {A} {B} f) = Σ (FunSeq A B) (λ fs → Id f (↯fun fs))
-path-type ptDone _ = Lift ⊤
+path-type ptDone _ = Lift Bool
 
 record Recognition {i} (src-pt trgt-pt : PathType) (src-params : param-type {i} src-pt)
                        (src-path : path-type src-pt src-params) : UU (lsuc i) where
@@ -67,7 +67,7 @@ reasoning-type-funseq : ∀ {i} {A B : UU i} {pt : PathType} →
   (fs : FunSeq A B) → ReasoningSeq ptFunSeq pt → Maybe (Recognition ptFunSeq pt (mk-fun-spec (↯fun fs)) (fs , refl _))
 
 reasoning-type-done : ∀ {i} {pt : PathType} → ReasoningSeq ptDone pt →
-  Maybe (Recognition {i} ptDone pt _ _)
+  Maybe (Recognition {i} ptDone pt _ (lift true))
 reasoning-type-done □R = just (mk-recognition _ _ id (refl _))
 
 reasoning-type-alg {x = x} {y} s □R = just (mk-recognition (mk-path-spec x y) s id (refl _))
@@ -111,26 +111,17 @@ reasoning-type-funseq {A = A} {B} fs □R = just (mk-recognition (mk-fun-spec (�
 reasoning-type-funseq {i} fs (CollapseFuns ::R rs) with reasoning-type-done {i} rs
 ... | nothing = nothing
 ... | just (mk-recognition tp ti f pf) =
-           just (mk-recognition tp ti (λ u → (↯fun fs ∘◁ □fun , refl _)) {!collapseFuns fs!})
-{-
-back-type-alg : ∀ {i} {A : UU i} {x y : A} {pt : PathType}
-  (s : PathAlg x y) (rs : ReasoningSeq ptAlg pt) (p : Is-just (reasoning-type-alg s rs))
-  (q : (to-witness p)) → UU i
+           just (mk-recognition tp ti (g ∘ f)
+                (ap g pf))  where
+                  g : Lift {j = lsuc i} Bool →  path-type ptFunSeq (mk-fun-spec (↯fun fs))
+                  g (lift true) = fs , refl _
+                  g (lift false) = ↯fun fs ∘◁ □fun , refl _
 
-back-type-seg : ∀ {i} {A : UU i} {x y : A} {pt : PathType}
-  (s : PathSeg x y) (rs : ReasoningSeq ptSeg pt) (p : Is-just (reasoning-type-seg s rs))
-  (q : (to-witness p)) → UU i
 
-back-type-funseq : ∀ {i} {A B : UU i} {pt : PathType}
-  (fs : FunSeq A B) (rs : ReasoningSeq ptFunSeq pt) (p : Is-just (reasoning-type-funseq fs rs))
-  (q : (to-witness p)) → UU i
+make-reas-path : ∀ {i} {A : UU i} (f : A → A) {x : A} (a : Id x x) (b : Id (f (f x)) (f (f x))) →
+  PathAlg  (f (f x)) (f (f x))
+make-reas-path f a b = □ ▷ △ b ▷ △ b ▷ f ⊚ f ⊚ △ a ▷ △ b
 
-open import Data.Maybe.Relation.Unary.Any using (Any) renaming (just to any-j)
-
-back-type-alg s □R (any-j _) q = IdAlg s (pr₁ q)
-back-type-alg s (Zoom n m ::R rs) p q = {!!}
-back-type-alg s (Select n ::R rs) p q = {!!}
-
-back-type-seg = {!!}
-
-back-type-funseq = {!!}-}
+reasoning-test :  ∀ {i} {A : UU i} (f : A → A) {x : A} (a : Id x x) (b : Id (f (f x)) (f (f x))) →
+  Maybe (Recognition ptAlg ptDone (mk-path-spec (f (f x)) (f (f x))) (make-reas-path f a b))
+reasoning-test f a b = reasoning-type-alg (make-reas-path f a b) (Select 2 ::R FunsOver 2 ::R CollapseFuns ::R □R) 
