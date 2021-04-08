@@ -36,6 +36,19 @@ module _ {i} where
   □fun ▷⊚R p = p
   (f ∘◁ fs) ▷⊚R p = mk-seg-id (ap (ap f) (id-seg↯ (fs ▷⊚R p)))
 
+  record IdFunSeq {A B : UU i} (fs gs : FunSeq A B) : UU (lsuc i) where
+    constructor mk-fun-id
+    field
+      id-fun↯ : Id (↯fun fs) (↯fun gs)
+      id-ap↯ : {x y : A} (a : PathSeg x y) →
+        IdSeg (fs ▷⊚ a) ((ap (^ x) id-fun↯) *SegL (gs ▷⊚ a) *SegR inv (ap (^ y) id-fun↯))
+
+  id-fun↯ = IdFunSeq.id-fun↯
+  id-ap↯ = IdFunSeq.id-ap↯
+
+  collapseFuns : {A B : UU i} (fs : FunSeq A B) → IdFunSeq fs (↯fun fs ∘◁ □fun)
+  collapseFuns fs = mk-fun-id (refl _) (λ a → ↯-▷⊚ fs a)
+
 module _ {i} {A B : UU i} where
   infixr 20 _⊚◁_
   _⊚◁_ : (f : A → B) {x y : A} → PathAlg x y → PathAlg (f x) (f y)
@@ -61,6 +74,7 @@ module _ {i} where
       pa : Id b ((inv px) *SegL fs ▷⊚ a *SegR py)
 
   private
+    u-A = UnderInfo.A
     u-fs = UnderInfo.fs
     u-x = UnderInfo.x
     u-y = UnderInfo.y
@@ -92,9 +106,16 @@ module _ {i} where
     IdSeg (u-a info) t → IdSeg a (inv (u-px info) *SegL ((u-fs info) ▷⊚ t) *SegR (u-py info))
   replaceUnder {a = b} (mk-UnderInfo fs a px py pa) p = pa *segL (inv px *seg'L (fs ▷⊚R p) *seg'R py)
 
-  colapseOver : {A : UU i} {x y : A} {a : PathSeg x y} (info : UnderInfo a) →
+  replaceOver : {A : UU i} {x y : A} {a : PathSeg x y} (info : UnderInfo a) {gs : FunSeq (u-A info) A} →
+    (p : IdFunSeq (u-fs info) gs) →
+    IdSeg a (inv (u-px info) *SegL ((ap (^ (u-x info)) (id-fun↯ p))
+                  *SegL (gs ▷⊚ (u-a info)) *SegR inv (ap (^ (u-y info)) (id-fun↯ p))) *SegR u-py info)
+  replaceOver (mk-UnderInfo fs a px py pa) p = pa *segL (inv px *seg'L (id-ap↯ p a) *seg'R py)
+
+
+  collapseOver : {A : UU i} {x y : A} {a : PathSeg x y} (info : UnderInfo a) →
     IdSeg a (inv (u-px info) *SegL ↯fun (u-fs info) ⊚ (u-a info) *SegR (u-py info))
-  colapseOver (mk-UnderInfo fs a px py pa) = pa *segL (inv px *seg'L ↯-▷⊚ fs a *seg'R py)
+  collapseOver info = replaceOver info (collapseFuns (u-fs info))
 
   -- Tests
 
@@ -113,4 +134,4 @@ module _ {i} where
 
   under-test3 : {A : UU i} {x : A} (f : A → A) (a : Id x x) →
     Id (ap f (ap f (ap f (ap f (ap f a))))) (ap (f ∘ f ∘ f ∘ f ∘ f) a)
-  under-test3 f a  = id-seg↯ (colapseOver (under-test f a))
+  under-test3 f a  = id-seg↯ (collapseOver (under-test f a))

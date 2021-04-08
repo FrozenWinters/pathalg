@@ -44,7 +44,8 @@ record IdSeg {i} {A : UU i} {x y : A} (a b : PathSeg x y) : UU i where
 
 id-seg↯ = IdSeg.id-seg↯
 
-infixl 20 _*algL_  _*algR_ _*segL_  _*segR_  _*SegL_  _*SegR_ _*seg'L_  _*seg'R_
+infixr 21 _*algL_ _*segL_ _*SegL_ _*seg'L_ 
+infixl 20 _*algR_ _*segR_ _*SegR_ _*seg'R_
 
 _*algL_ :  ∀ {i} {A : UU i} {x y : A} {s t r : PathAlg x y} →
   Id s t → IdAlg t r → IdAlg s r
@@ -101,6 +102,11 @@ _▷R_ : ∀ {i} {A : UU i} {x y z : A} {s t : PathAlg x y} →
 _▷R_ {s = □} {t = t} p a = ↯-▷ □ a ·alg mk-id (id↯ p ·R (↯-seg a)) ·alg inv-alg (↯-▷ t a)
 _▷R_ {s = s@(_ ▷ _)} {t = □} p a = mk-id (id↯ p ·R (↯-seg a)) ·alg  inv-alg (↯-▷ □ a)
 _▷R_ {s = s@(_ ▷ _)} {t = t@(_ ▷ _)} p a = mk-id (id↯ p ·R _)
+
+infixl 20 _·seg_
+_·seg_ : ∀ {i} {A : UU i} {x y : A} {a b c : PathSeg x y} →
+  IdSeg a b → IdSeg b c → IdSeg a c
+p ·seg q = mk-seg-id (id-seg↯ p · id-seg↯ q)
 
 --↯-▷ s a ·alg mk-id (id↯ p ·R (↯-seg a)) ·alg inv-alg (↯-▷ t a)
 

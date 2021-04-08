@@ -28,6 +28,9 @@ _∘d_ : ∀ {i j k} {A : UU i} {B : A → UU j} {C : (x : A) → (B x) → UU k
   ((x : A) → (y : (B x)) → (C x y)) → (f : (x : A) → (B x)) → ((x : A) → (C x (f x)))
 (g ∘d f) x =  g x (f x)
 
+^ : ∀ {i} {A : UU i} → A → ∀ {j} {B : UU j} (f : A → B) → B
+(^ a) f = f a
+
 -- Dependent Sums
 
 record Σ {i j} (A : UU i) (B : A → UU j) : UU (i ⊔ j) where
@@ -62,13 +65,7 @@ open import Data.Unit as ⊤ using (⊤) renaming (tt to unit) public
 
 -- Booleans
 
-Bool = ⊤ + ⊤
-
-true : Bool
-true = inl unit
-
-false : Bool
-false = inr unit
+open import Data.Bool using (Bool; true; false) public
 
 -- Empty type
 

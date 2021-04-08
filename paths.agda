@@ -146,10 +146,12 @@ _*R_ : ∀ {i j} {A : UU i} {P : A → A → UU j} {x y z : A} →
   P x y → Id y z → P x z
 _*R_ {P = P} {x = x} p a = tr (λ u → P x u) a p
 
+infixl 20 _*·_
 _*·_ : ∀ {i} {A : UU i} {x y z : A} →
   Id x y → Id y z → Id x z
 _*·_ a b = _*L_ {P = Id} a b
 
+infixl 20 _·*_
 _·*_ : ∀ {i} {A : UU i} {x y z : A} →
   Id x y → Id y z → Id x z
 _·*_ {x = x} a b = _*R_ {P = Id} a b

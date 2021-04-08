@@ -21,7 +21,8 @@ record PathSpec {i} : UU (lsuc i) where
 record FunSpec {i} : UU (lsuc i) where
   constructor mk-fun-spec
   field
-    A B : UU i
+    {A B} : UU i
+    f : A → B
 
 param-type : ∀ {i} → PathType →  UU (lsuc i)
 param-type ptAlg = PathSpec
@@ -32,7 +33,7 @@ param-type  ptDone = Lift ⊤
 path-type : ∀ {i} (pt : PathType) → param-type {i} pt → UU (lsuc i)
 path-type ptAlg (mk-path-spec x y) = PathAlg x y
 path-type ptSeg (mk-path-spec x y) = PathSeg x y
-path-type ptFunSeq (mk-fun-spec A B) = FunSeq A B
+path-type ptFunSeq (mk-fun-spec {A} {B} f) = Σ (FunSeq A B) (λ fs → Id f (↯fun fs))
 path-type ptDone _ = Lift ⊤
 
 record Recognition {i} (src-pt trgt-pt : PathType) (src-params : param-type {i} src-pt)
@@ -63,7 +64,7 @@ reasoning-type-seg : ∀ {i} {A : UU i} {x y : A} {pt : PathType} →
   (a : PathSeg x y) → ReasoningSeq ptSeg pt → Maybe (Recognition ptSeg pt (mk-path-spec x y) a)
 
 reasoning-type-funseq : ∀ {i} {A B : UU i} {pt : PathType} →
-  (fs : FunSeq A B) → ReasoningSeq ptFunSeq pt → Maybe (Recognition ptFunSeq pt (mk-fun-spec A B) fs)
+  (fs : FunSeq A B) → ReasoningSeq ptFunSeq pt → Maybe (Recognition ptFunSeq pt (mk-fun-spec (↯fun fs)) (fs , refl _))
 
 reasoning-type-done : ∀ {i} {pt : PathType} → ReasoningSeq ptDone pt →
   Maybe (Recognition {i} ptDone pt _ _)
@@ -94,10 +95,23 @@ reasoning-type-seg a (SegUnder n ::R rs) with goUnder a n
                                         (pa · ap (λ t → inv px *SegL (fs ▷⊚ t) *SegR py) pf))
 reasoning-type-seg a (FunsOver n ::R rs) with goUnder a n
 ... | nothing = nothing
-... | just (mk-UnderInfo fs _ _ _ _) = {!reasoning-type-funseq fs rs!}
+... | just (mk-UnderInfo fs {x} {y} b px py pa) with reasoning-type-funseq fs rs
+...   | nothing = nothing
+...   | just (mk-recognition tp ti f pf) =
+             just (mk-recognition tp ti
+                     (λ t → inv px *SegL
+                       (ap (^ x) (pr₂ (f t)) *SegL (pr₁ (f t) ▷⊚ b) *SegR  inv (ap (^ y) (pr₂ (f t))))
+                       *SegR py)
+                     (pa · ap
+                     (λ t → inv px *SegL
+                       (ap (^ x) (pr₂ t) *SegL (pr₁ t ▷⊚ b) *SegR  inv (ap (^ y) (pr₂ t)))
+                       *SegR py) pf)) -- path algebra go brr
 
-reasoning-type-funseq {A = A} {B} fs □R = just (mk-recognition (mk-fun-spec A B) fs id (refl _))
-reasoning-type-funseq fs (CollapseFuns ::R rs) = {!reasoning-type-done rs!}
+reasoning-type-funseq {A = A} {B} fs □R = just (mk-recognition (mk-fun-spec (↯fun fs)) (fs , refl _) id (refl _))
+reasoning-type-funseq {i} fs (CollapseFuns ::R rs) with reasoning-type-done {i} rs
+... | nothing = nothing
+... | just (mk-recognition tp ti f pf) =
+           just (mk-recognition tp ti (λ u → (↯fun fs ∘◁ □fun , refl _)) {!collapseFuns fs!})
 {-
 back-type-alg : ∀ {i} {A : UU i} {x y : A} {pt : PathType}
   (s : PathAlg x y) (rs : ReasoningSeq ptAlg pt) (p : Is-just (reasoning-type-alg s rs))
