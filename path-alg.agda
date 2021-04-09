@@ -83,6 +83,9 @@ refl _ *seg'L p = p
 refl-alg : ∀ {i} {A : UU i} {x y : A} (s : PathAlg x y) → IdAlg s s
 refl-alg s = mk-id (refl (↯ s))
 
+refl-seg : ∀ {i} {A : UU i} {x y : A} (a : PathSeg x y) → IdSeg a a
+refl-seg s = mk-seg-id (refl (↯-seg s))
+
 infixl 20 _·alg_
 _·alg_ : ∀ {i} {A : UU i} {x y : A} {s t r : PathAlg x y} →
   IdAlg s t → IdAlg t r → IdAlg s r

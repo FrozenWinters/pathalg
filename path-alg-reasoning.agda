@@ -36,6 +36,15 @@ path-type ptSeg (mk-path-spec x y) = PathSeg x y
 path-type ptFunSeq (mk-fun-spec {A} {B} f) = Σ (FunSeq A B) (λ fs → Id f (↯fun fs))
 path-type ptDone _ = Lift Bool
 
+data done-fibr (x y : Bool) : UU lzero where
+  done-path : done-fibr x y
+
+segment-type : ∀ {i} (pt : PathType) (param : param-type {i} pt) (s t : path-type pt param) → UU (lsuc i)
+segment-type ptAlg _ s t = Lift (IdAlg s t)
+segment-type ptSeg _ a b = Lift (IdSeg a b)
+segment-type ptFunSeq (mk-fun-spec f) fs gs = IdFunSeq (pr₁ fs) (pr₁ gs)
+segment-type ptDone _ s t = Lift (done-fibr (lower s) (lower t))
+
 record Recognition {i} (src-pt trgt-pt : PathType) (src-params : param-type {i} src-pt)
                        (src-path : path-type src-pt src-params) : UU (lsuc i) where
   constructor mk-recognition
@@ -44,6 +53,14 @@ record Recognition {i} (src-pt trgt-pt : PathType) (src-params : param-type {i} 
     trgt-path : (path-type trgt-pt trgt-params)
     get-final : (path-type trgt-pt trgt-params) →  (path-type src-pt src-params)
     recognition : Id src-path (get-final trgt-path)
+    reasoning : {t : path-type trgt-pt trgt-params} →
+      segment-type trgt-pt trgt-params trgt-path t → segment-type src-pt src-params src-path (get-final t)
+
+private
+  trgt-params = Recognition.trgt-params
+  trgt-path = Recognition.trgt-path
+  get-final = Recognition.get-final
+  recognition = Recognition.recognition
 
 data ReasoningCommand : PathType → PathType → UU lzero where
   Zoom : ℕ → ℕ → ReasoningCommand ptAlg ptAlg
@@ -68,36 +85,39 @@ reasoning-type-funseq : ∀ {i} {A B : UU i} {pt : PathType} →
 
 reasoning-type-done : ∀ {i} {pt : PathType} → ReasoningSeq ptDone pt →
   Maybe (Recognition {i} ptDone pt _ (lift true))
-reasoning-type-done □R = just (mk-recognition _ _ id (refl _))
+reasoning-type-done □R = just (mk-recognition _ _ id (refl _) id)
 
-reasoning-type-alg {x = x} {y} s □R = just (mk-recognition (mk-path-spec x y) s id (refl _))
+reasoning-type-alg {x = x} {y} s □R = just (mk-recognition (mk-path-spec x y) s id (refl _) id)
 reasoning-type-alg s (Zoom n m ::R rs) with goZoom s n m
 ... | mk-ZoomInfo {x'} {y'} initial middle final p with reasoning-type-alg middle rs
 ...   | nothing = nothing
-...   | just (mk-recognition tp ti f pf) =
+...   | just (mk-recognition tp ti f pf r) =
              just (mk-recognition tp ti (λ t → initial ⋈ ((f t) ⋈ final))
-                                        (p · (ap (λ t → initial ⋈ (t ⋈ final)) pf)))
+                                        (p · (ap (λ t → initial ⋈ (t ⋈ final)) pf))
+                                        λ q → lift (replaceZoom (mk-ZoomInfo initial middle final p) (lower (r q))))
 reasoning-type-alg s (Select n ::R rs) with goSelect s n
 ... | nothing = nothing
 ... | just (mk-SelectInfo initial middle final p) with reasoning-type-seg middle rs
 ...   | nothing = nothing
-...   | just (mk-recognition tp ti f pf) =
+...   | just (mk-recognition tp ti f pf r) =
              just (mk-recognition tp ti (λ t → initial ⋈ ((f t) ◁ final))
-                                        (p · (ap (λ t → initial ⋈ (t ◁ final)) pf)))
+                                        (p · (ap (λ t → initial ⋈ (t ◁ final)) pf))
+                                        λ q → lift (replaceSelect (mk-SelectInfo initial middle final p) (lower (r q))))
 
-reasoning-type-seg {x = x} {y} a □R = just (mk-recognition (mk-path-spec x y) a id (refl _))
+reasoning-type-seg {x = x} {y} a □R = just (mk-recognition (mk-path-spec x y) a id (refl _) id)
 reasoning-type-seg a (SegUnder n ::R rs) with goUnder a n
 ... | nothing = nothing
 ... | just (mk-UnderInfo fs b px py pa) with reasoning-type-seg b rs
 ...   | nothing = nothing
-...   | just (mk-recognition tp ti f pf) =
+...   | just (mk-recognition tp ti f pf r) =
              just (mk-recognition tp ti (λ t → inv px *SegL (fs ▷⊚ (f t)) *SegR py)
-                                        (pa · ap (λ t → inv px *SegL (fs ▷⊚ t) *SegR py) pf))
+                                        (pa · ap (λ t → inv px *SegL (fs ▷⊚ t) *SegR py) pf)
+                                        λ q → lift (replaceUnder (mk-UnderInfo fs b px py pa) (lower (r q))))
 reasoning-type-seg a (FunsOver n ::R rs) with goUnder a n
 ... | nothing = nothing
 ... | just (mk-UnderInfo fs {x} {y} b px py pa) with reasoning-type-funseq fs rs
 ...   | nothing = nothing
-...   | just (mk-recognition tp ti f pf) =
+...   | just (mk-recognition tp ti f pf r) =
              just (mk-recognition tp ti
                      (λ t → inv px *SegL
                        (ap (^ x) (pr₂ (f t)) *SegL (pr₁ (f t) ▷⊚ b) *SegR  inv (ap (^ y) (pr₂ (f t))))
@@ -105,18 +125,22 @@ reasoning-type-seg a (FunsOver n ::R rs) with goUnder a n
                      (pa · ap
                      (λ t → inv px *SegL
                        (ap (^ x) (pr₂ t) *SegL (pr₁ t ▷⊚ b) *SegR  inv (ap (^ y) (pr₂ t)))
-                       *SegR py) pf)) -- path algebra go brr
+                       *SegR py) pf) -- path algebra go brr
+                       λ q → lift ({!replaceOver (mk-UnderInfo fs b px py pa) (r q)!}))
 
-reasoning-type-funseq {A = A} {B} fs □R = just (mk-recognition (mk-fun-spec (↯fun fs)) (fs , refl _) id (refl _))
+reasoning-type-funseq {A = A} {B} fs □R = just (mk-recognition (mk-fun-spec (↯fun fs)) (fs , refl _) id (refl _) id)
 reasoning-type-funseq {i} fs (CollapseFuns ::R rs) with reasoning-type-done {i} rs
 ... | nothing = nothing
-... | just (mk-recognition tp ti f pf) =
+... | just (mk-recognition tp ti f pf r) =
            just (mk-recognition tp ti (g ∘ f)
-                (ap g pf))  where
+                (ap g pf)
+                λ q → h (lower (r q)))  where
                   g : Lift {j = lsuc i} Bool →  path-type ptFunSeq (mk-fun-spec (↯fun fs))
                   g (lift true) = fs , refl _
                   g (lift false) = ↯fun fs ∘◁ □fun , refl _
-
+                  h : {b : Bool} → done-fibr true b → IdFunSeq fs (pr₁ (g (lift b)))
+                  h {false} _ = collapseFuns fs
+                  h {true} _ = refl-fun fs
 
 make-reas-path : ∀ {i} {A : UU i} (f : A → A) {x : A} (a : Id x x) (b : Id (f (f x)) (f (f x))) →
   PathAlg  (f (f x)) (f (f x))
@@ -124,4 +148,4 @@ make-reas-path f a b = □ ▷ △ b ▷ △ b ▷ f ⊚ f ⊚ △ a ▷ △ b
 
 reasoning-test :  ∀ {i} {A : UU i} (f : A → A) {x : A} (a : Id x x) (b : Id (f (f x)) (f (f x))) →
   Maybe (Recognition ptAlg ptDone (mk-path-spec (f (f x)) (f (f x))) (make-reas-path f a b))
-reasoning-test f a b = reasoning-type-alg (make-reas-path f a b) (Select 2 ::R FunsOver 2 ::R CollapseFuns ::R □R) 
+reasoning-test f a b = reasoning-type-alg (make-reas-path f a b) (Select 2 ::R FunsOver 2 ::R CollapseFuns ::R □R)

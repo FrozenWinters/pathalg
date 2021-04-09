@@ -46,6 +46,9 @@ module _ {i} where
   id-fun↯ = IdFunSeq.id-fun↯
   id-ap↯ = IdFunSeq.id-ap↯
 
+  refl-fun : {A B : UU i} (fs : FunSeq A B) → IdFunSeq fs fs
+  refl-fun fs = mk-fun-id (refl _) (λ a → refl-seg (fs ▷⊚ a))
+
   collapseFuns : {A B : UU i} (fs : FunSeq A B) → IdFunSeq fs (↯fun fs ∘◁ □fun)
   collapseFuns fs = mk-fun-id (refl _) (λ a → ↯-▷⊚ fs a)
 

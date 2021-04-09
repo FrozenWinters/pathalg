@@ -37,14 +37,17 @@ _⋈R_ : {x y z : A} {s t : PathAlg x y} (p : IdAlg s t) (r : PathAlg y z) → I
 p ⋈R □ = p
 p ⋈R (r ▷ a) = (p ⋈R r) ▷R a
 
-_◁R_ : {x y z : A} (a : PathSeg x y) {r s : PathAlg y z} (p : IdAlg r s) → IdAlg (a ◁ r) (a ◁ s)
-_◁R_ a {r = r} {s = s} p = ↯-⋈ (□ ▷ a) r ·alg mk-id (↯-seg a ·L id↯ p) ·alg inv-alg (↯-⋈ (□ ▷ a) s)
+_◁R_ : {x y z : A} {a b : PathSeg x y} (p : IdSeg a b) (s : PathAlg y z) → IdAlg (a ◁ s) (b ◁ s)
+p ◁R □ = mk-id (id-seg↯ p)
+p ◁R (s ▷ a) = (p ◁R s) ▷R a
+
+_◁L_ : {x y z : A} (a : PathSeg x y) {r s : PathAlg y z} (p : IdAlg r s) → IdAlg (a ◁ r) (a ◁ s)
+_◁L_ a {r = r} {s = s} p = ↯-⋈ (□ ▷ a) r ·alg mk-id (↯-seg a ·L id↯ p) ·alg inv-alg (↯-⋈ (□ ▷ a) s)
 
 _⋈L_ : {x y z : A} (s : PathAlg x y) {t r : PathAlg y z} (p : IdAlg t r) → IdAlg (s ⋈ t) (s ⋈ r)
 _⋈L_ □ {t = t} {r = r} p = ⋈-lunit t *algL p *algR inv (⋈-lunit r)
 _⋈L_ (s ▷ a) {t = t} {r = r} p =
-  ⋈-assoc s (□ ▷ a) t *algL ↯-⋈ s (a ◁ t) ·alg mk-id (↯ s ·L (id↯ (a ◁R p))) ·alg inv-alg (↯-⋈ s (a ◁ r)) *algR  inv (⋈-assoc s (□ ▷ a) r)
-
+  ⋈-assoc s (□ ▷ a) t *algL ↯-⋈ s (a ◁ t) ·alg mk-id (↯ s ·L (id↯ (a ◁L p))) ·alg inv-alg (↯-⋈ s (a ◁ r)) *algR  inv (⋈-assoc s (□ ▷ a) r)
 
 private
   Is-nonempty : {x y : A} → PathAlg x y → (UU lzero)
@@ -137,6 +140,13 @@ record SelectInfo {x y : A} (s : PathAlg x y) : UU (lsuc i) where
     final : PathAlg y' y
     p : Id s (init ⋈ (middle ◁ final))
 
+private
+  s-x = SelectInfo.x'
+  s-y = SelectInfo.y'
+  s-init = SelectInfo.init
+  s-middle = SelectInfo.middle
+  s-final = SelectInfo.final
+
 goZoom : {x y : A} (s : PathAlg x y) (n m : ℕ) → ZoomInfo s
 goZoom s n m =
   mk-ZoomInfo
@@ -166,5 +176,13 @@ goSelect s n with nonempty? (drop n s)
 ... | inl p = just (goSelect-helper s n p)
 ... | inr _ = nothing
 
-select-test : {x : A} (a : Id x x) → SelectInfo (make5 a)
-select-test a = to-witness-T (goSelect (make5 a) 2) _
+replaceSelect : {x y : A} {s : PathAlg x y} (info : SelectInfo s) {b : PathSeg (s-x info) (s-y info)} →
+  IdSeg (s-middle info) b → IdAlg s (s-init info ⋈ (b ◁ s-final info))
+replaceSelect (mk-SelectInfo init middle final p) {b = b} q = p *algL (init ⋈L (q ◁R final))
+
+lrefl-id-seg' : {A : UU i} {x y : A} (a : Id x y) → IdSeg (△ a) ⟨| □ ▷ △ (refl x) ▷ △ a |⟩
+lrefl-id-seg' a = mk-seg-id (inv (lrefl a))
+
+select-test : {x : A} (a : Id x x) →
+  IdAlg (□ ▷ △ a ▷ △ a ▷ △ a ▷ △ a ▷ △ a) (□ ▷ △ a ▷ △ a ▷ ⟨| □ ▷ △ refl x ▷ △ a |⟩ ▷ △ a ▷ △ a)
+select-test a = replaceSelect (to-witness-T (goSelect (make5 a) 2) _) (lrefl-id-seg' a)

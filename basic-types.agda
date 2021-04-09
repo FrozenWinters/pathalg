@@ -13,6 +13,8 @@ record Lift {i j} (A : UU i) : UU (i ⊔ j) where
   constructor lift
   field lower : A
 
+lower = Lift.lower
+
 -- Function types
 
 id : ∀ {i} {A : UU i} → A → A
