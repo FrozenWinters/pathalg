@@ -108,6 +108,10 @@ ap-inv :  ∀ {i j} {A : UU i} {B : UU j} (f : A → B) {x y : A} (a : Id x y) �
   Id (ap f (inv a)) (inv (ap f a))
 ap-inv f (refl x) = refl (refl (f x))
 
+ap-eval : ∀ {i j k} {A : UU i} {B : UU j} {C : UU k} (f : B → C) (x : A) {g1 g2 : A → B} (p : Id g1 g2) →
+  Id (ap f (ap (^ x) p)) (ap (^ x) (ap (f ∘_) p))
+ap-eval f x (refl g) = refl (refl (f (g x)))
+
 ap2 : ∀ {i j k} {A : UU i} {B : UU j} {C : UU k} (f : A → B → C) {x x' : A} {y y' : B} →
   Id x x' → Id y y' → Id (f x y) (f x' y')
 ap2 f (refl x) (refl y) = refl (f x y)
