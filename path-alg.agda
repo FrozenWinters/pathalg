@@ -30,14 +30,14 @@ data PathSeg {i} where
 ↯-seg (p-inv s) = inv (↯-seg s)
 ↯-seg (f ⊚ s) = ap f (↯-seg s)
 
-record IdAlg {i} {A : UU i} {x y : A} (s t : PathAlg x y) : UU i where
+record IdAlg {i} {A : UU i} {x y : A} (s t : PathAlg x y) : UU (lsuc i) where
   constructor mk-id
   field
     id↯ : Id (↯ s) (↯ t)
 
 id↯ = IdAlg.id↯
 
-record IdSeg {i} {A : UU i} {x y : A} (a b : PathSeg x y) : UU i where
+record IdSeg {i} {A : UU i} {x y : A} (a b : PathSeg x y) : UU (lsuc i) where
   constructor mk-seg-id
   field
     id-seg↯ : Id (↯-seg a) (↯-seg b)
@@ -103,7 +103,7 @@ inv-alg p = mk-id (inv (id↯ p))
 _▷R_ : ∀ {i} {A : UU i} {x y z : A} {s t : PathAlg x y} →
   IdAlg s t → (a : PathSeg y z) → IdAlg (s ▷ a) (t ▷ a)
 _▷R_ {s = □} {t = t} p a = ↯-▷ □ a ·alg mk-id (id↯ p ·R (↯-seg a)) ·alg inv-alg (↯-▷ t a)
-_▷R_ {s = s@(_ ▷ _)} {t = □} p a = mk-id (id↯ p ·R (↯-seg a)) ·alg  inv-alg (↯-▷ □ a)
+_▷R_ {s = s@(_ ▷ _)} {t = □} p a = mk-id (id↯ p ·R (↯-seg a)) ·alg inv-alg (↯-▷ □ a)
 _▷R_ {s = s@(_ ▷ _)} {t = t@(_ ▷ _)} p a = mk-id (id↯ p ·R _)
 
 infixl 20 _·seg_
@@ -117,4 +117,26 @@ _▷L_ : ∀ {i} {A : UU i} {x y z : A} (s : PathAlg x y) {a b : PathSeg y z} �
   IdAlg (□ ▷ a) (□ ▷ b) → IdAlg (s ▷ a) (s ▷ b)
 _▷L_ s {a = a} {b = b} p = ↯-▷ s a ·alg mk-id (↯ s ·L id↯ p) ·alg inv-alg (↯-▷ s b)
 
+enbracket : ∀ {i} {A : UU i} {x y : A} {s t : PathAlg x y} →
+  IdAlg s t → IdSeg ⟨| s |⟩ ⟨| t |⟩
+enbracket p = mk-seg-id (id↯ p)
 
+record BracketInfo {i} {A : UU i} {x y : A} (a : PathSeg x y) : UU (lsuc i) where
+  constructor mk-BracketInfo
+  field
+    s : PathAlg x y
+    p : Id a ⟨| s |⟩
+
+private
+  b-s = BracketInfo.s
+  b-p = BracketInfo.p
+
+goBracket : ∀ {i} {A : UU i} {x y : A} (a : PathSeg x y) → Maybe (BracketInfo a)
+goBracket (△ a) = nothing
+goBracket ⟨| s |⟩ = just (mk-BracketInfo s (refl ⟨| s |⟩))
+goBracket (p-inv a) = nothing
+goBracket (f ⊚ a) = nothing
+
+replaceBracket : ∀ {i} {A : UU i} {x y : A} {a : PathSeg x y} (info : BracketInfo a) {t : PathAlg x y} →
+  IdAlg (b-s info) t → IdSeg a ⟨| t |⟩
+replaceBracket (mk-BracketInfo s p) q = p *segL (enbracket q)

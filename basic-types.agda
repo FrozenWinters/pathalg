@@ -64,6 +64,12 @@ open import Data.Nat as ℕ using (ℕ) renaming (zero to Z; suc to S) public
 
 open import Data.Unit as ⊤ using (⊤) renaming (tt to unit) public
 
+-- Empty type
+
+open import Data.Empty as ⊥ public
+
+¬ : ∀ {i} (A : UU i) → UU i
+¬ A = A → ⊥
 
 -- Booleans
 
@@ -75,4 +81,6 @@ open import Data.Empty public
 
 -- Maybe
 
-open import Data.Maybe as Maybe using (Maybe; just; nothing; maybe; to-witness; to-witness-T; Is-just; Is-nothing) public
+open import Data.Maybe as Maybe using (Maybe; just; nothing; maybe; to-witness; to-witness-T; Is-just; Is-nothing; _>>=_) public
+open import Data.Maybe.Categorical public
+open import Data.Maybe.Relation.Unary.Any using (Any) renaming (just to any-j) public
