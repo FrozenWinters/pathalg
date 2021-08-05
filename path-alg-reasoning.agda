@@ -2,9 +2,9 @@
 
 module path-alg-reasoning where
 
-open import path-alg
-open import path-alg-concat
-open import path-alg-ap
+open import path-alg public
+open import path-alg-concat public
+open import path-alg-ap public
 
 data PathType : UU lzero where
   ptAlg : PathType
@@ -89,7 +89,7 @@ reasoning-type-done : ∀ {i} {pt : PathType} → ReasoningSeq ptDone pt →
   Maybe (Recognition {i} ptDone pt _ (lift true))
 reasoning-type-done □R = just (mk-recognition _ _ id (refl _) id)
 
-open Maybe
+open import Data.Maybe using (_>>=_)
                
 reasoning-type-alg {x = x} {y} s □R =
   just (mk-recognition (mk-path-spec x y) s id (refl _) id)

@@ -18,6 +18,10 @@ data PathSeg {i} where
    p-inv_ : {A : UU i} {x y : A} → PathSeg x y → PathSeg y x
    _⊚_ : {A B : UU i} (f : A → B) {x y : A} → PathSeg x y → PathSeg (f x) (f y)
 
+infixl 30 _▸_
+_▸_ : ∀ {i} {A : UU i} {x y z : A} → PathAlg x y → Id y z → PathAlg x z
+s ▸ a = s ▷ △ a
+
 ↯ : ∀ {i} {A : UU i} {x y : A} → PathAlg x y → Id x y
 ↯-seg : ∀ {i} {A : UU i} {x y : A} → PathSeg x y → Id x y
 
