@@ -49,7 +49,7 @@ _⋈L_ □ {t = t} {r = r} p = ⋈-lunit t *algL p *algR inv (⋈-lunit r)
 _⋈L_ (s ▷ a) {t = t} {r = r} p =
   ⋈-assoc s (□ ▷ a) t *algL ↯-⋈ s (a ◁ t) ·alg mk-id (↯ s ·L (id↯ (a ◁L p))) ·alg inv-alg (↯-⋈ s (a ◁ r)) *algR  inv (⋈-assoc s (□ ▷ a) r)
 
-private
+module PathAlgOps where
   Is-nonempty : {x y : A} → PathAlg x y → (UU lzero)
   Is-nonempty □ = ⊥
   Is-nonempty (s ▷ a) = ⊤
@@ -115,6 +115,21 @@ private
   first-rest-unsplit : {x y : A} → (s : PathAlg x y) → (p : Is-nonempty s) → Id ((first s p) ◁ (drop 1 s)) s
   first-rest-unsplit s@(_ ▷ _) p = unsplit s p
 
+  length : {x y : A} (s : PathAlg x y) → ℕ
+  length □ = 0
+  length (s ▷ a) = S (length s)
+
+  point-from-end : (n : ℕ) {x y : A} → PathAlg x y → A
+  point-from-end Z {y = y} s = y
+  point-from-end (S k) {x = x} □ = x
+  point-from-end (S k) (s ▷ x) = point-from-end k s
+
+  drop-from-end : (n : ℕ) {x y : A} (s : PathAlg x y) →
+    PathAlg x (point-from-end n s)
+  drop-from-end Z s = s
+  drop-from-end (S k) □ = □
+  drop-from-end (S k) (s ▷ x) = drop-from-end k s
+
 record ZoomInfo {x y : A} (s : PathAlg x y) : UU (lsuc i) where
   constructor mk-ZoomInfo
   field
@@ -146,6 +161,8 @@ private
   s-init = SelectInfo.init
   s-middle = SelectInfo.middle
   s-final = SelectInfo.final
+
+open PathAlgOps
 
 goZoom : {x y : A} (s : PathAlg x y) (n m : ℕ) → ZoomInfo s
 goZoom s n m =
