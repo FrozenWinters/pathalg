@@ -119,9 +119,9 @@ macro
     t' ← quoteTC t
     target ← mirror-commands-alg rs t' s'
     full-req ← unquoteTC {A = reasoning-requierment t rs} (con (quote _,_) (vArg target ∷ vArg req ∷ []))
-    β' ←  (quoteTC (inv-alg (reason-alg t rs full-req)))
-    β ← unquoteTC {A = IdAlg s t} β'
-    ans ←  withNormalisation false (quoteTC (β ·alg α))
+    β' ←  (quoteTC (reason-alg t rs full-req))
+    β ← unquoteTC {A = IdAlg t s} β'
+    ans ←  withNormalisation false (quoteTC (inv-alg β ·alg α))
     unify goal ans)
 
 _=∎ : ∀ {i} {A : UU i} {x y : A} (s : PathAlg x y) → IdAlg s s
